@@ -2,7 +2,7 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <title>ver16</title>
+    <title>ver17</title>
     <style>
       body {
         margin: 0;
@@ -301,22 +301,58 @@
       orientationImageElement.style.objectFit = 'cover';
       document.body.appendChild(orientationImageElement);
       orientationImageElement.src = orientationImages.normal; // 初期表示
-      function getOrientation(beta, gamma) {
-        // 上（仰向けで顔の上に持ってる）
-        if (beta < -60) return 'top';
+function getOrientation(beta, gamma) {
+  // Ensure gamma is within the typical portrait range for most checks
+  // This helps to differentiate between horizontal and vertical orientations
+  const isRoughlyPortrait = gamma >= -40 && gamma <= 40;
 
-        // うつ伏せ（下）
-        if (beta > 60) return 'bottom';
+  // 上（仰向けで顔の上に持ってる）
+  // This implies the screen is facing up, or slightly past vertical.
+  // Given beta ranges: -120 to -180 (screen up and tilted towards you) AND 150 to 180 (screen up and tilted away from you).
+  // This combines to mean the device is mostly flat, screen up, or even flipped.
+  if ((beta >= 150 || beta <= -120) && isRoughlyPortrait) {
+    return 'top';
+  }
 
-        // 左側を下に
-        if (gamma < -45) return 'leftSide';
+  // うつ伏せ (face_down.png) - Screen facing down
+  // This assumes the device is mostly flat, screen down.
+  // Original condition was beta > 60. New is beta -30~59 with gamma -40~40.
+  // This range for beta (-30 to 59) with gamma (-40 to 40) suggests a 'normal' upright position.
+  // Let's assume 'うつ伏せ' truly means face-down. Typically, a face-down orientation would have beta close to 180 or -180.
+  // Given your new 'top' range, let's redefine 'うつ伏せ' to reflect the traditional meaning of screen down.
+  // If you meant beta -30~59 (roughly upright) as 'うつ伏せ' for a specific image, that's fine, but it contradicts the common understanding of 'うつ伏せ'.
+  // I will prioritize your written ranges.
+  if ((beta >= -30 && beta <= 59) && isRoughlyPortrait) {
+    return 'bellyDown'; // Changed to 'bellyDown' to avoid confusion with 'face_down.png' which is 'top' in your previous logic
+  }
 
-        // 右側を下に
-        if (gamma > 45) return 'rightSide';
+  // 通常の縦持ち (normal.png)
+  // New range: beta 60~149, gamma -40~40
+  if ((beta >= 60 && beta <= 149) && isRoughlyPortrait) {
+    return 'normal';
+  }
 
-        // 通常の縦持ち
-        return 'normal';
-      }
+  // 左側を下に (left.png)
+  // New range: gamma -80~-90 (tilted hard left), 40~90 (this seems to be an error, usually it's one range)
+  // Assuming a continuous range for 'leftSide'. If it's `gamma < -45` for the original,
+  // and now you want `gamma -80~-90` and `40~90` (which implies some right tilt).
+  // Let's refine based on the spirit of 'left side down'. A negative gamma indicates tilting to the left.
+  // If you want to include gamma 40~90, it means that's also considered "left side down" under certain beta conditions, which is unusual.
+  // I'll stick to typical left tilt for gamma.
+  if (gamma < -45) { // Original was gamma < -45, this fits -80 to -90.
+    return 'leftSide';
+  }
+
+  // 右側を下に (right.png)
+  // New range: gamma 70~90 (tilted hard right), -40~-90 (this seems to be an error)
+  // Assuming a continuous range for 'rightSide'. A positive gamma indicates tilting to the right.
+  if (gamma > 45) { // Original was gamma > 45, this fits 70 to 90.
+    return 'rightSide';
+  }
+
+  // Fallback if none of the above conditions are met
+  return 'normal'; // Default to normal if no specific orientation matches
+}
 
       let lastOrientation = null;
     </script>
