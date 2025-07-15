@@ -55,34 +55,54 @@
         margin: 5px 0 2px;
         -webkit-appearance: none;
       }
+      /* New styles for displaying gyro values */
+      .gyro-values {
+        position: absolute;
+        top: 10px;
+        left: 10px; /* Adjusted position to not overlap with button */
+        z-index: 10;
+        color: white;
+        font-size: 16px;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 5px 10px;
+        border-radius: 5px;
+      }
     </style>
   </head>
   <body>
     <button class="gyro-button" onclick="requestAccess()">ジャイロスコープの許可を取得</button>
     <div class="slider-controls">
       <label for="hueSlider">色相回転:</label>
-      <input type="range" id="hueSlider" min="0" max="360" value="0">
+      <input type="range" id="hueSlider" min="0" max="360" value="0" />
       <label for="glowSlider">発光レベル:</label>
-      <input type="range" id="glowSlider" min="1" max="1.3" step="0.01" value="1">
+      <input type="range" id="glowSlider" min="1" max="1.3" step="0.01" value="1" />
     </div>
     <div class="image-container" id="imageContainer"></div>
+
+    <div class="gyro-values">
+      <p>Beta: <span id="betaValue">0</span></p>
+      <p>Gamma: <span id="gammaValue">0</span></p>
+    </div>
 
     <script>
       const MAX_DARKEN_EFFECT = 0.3; // 共通の最大暗転度合い
 
       const config = [
         { filename: 'a.png', hueRotate: true, glow: true, x: 100, y: 100 },
-        { filename: 'b.png', hueRotate: false, glow: false, x: 100, y: 100, affectedByGlow: {sourceGlow: true /* glowがtrueのオブジェクトからのglowに影響を受ける*/} },
-        { filename: 'c.png', hueRotate: true, glow: false, x: 302, y: 100},
+        { filename: 'b.png', hueRotate: false, glow: false, x: 100, y: 100, affectedByGlow: { sourceGlow: true /* glowがtrueのオブジェクトからのglowに影響を受ける*/ } },
+        { filename: 'c.png', hueRotate: true, glow: false, x: 302, y: 100 },
         { filename: 'd.png', hueRotate: false, glow: false, firefly: true, x: 504, y: 100 },
-        { filename: 'e.png', hueRotate: true, glow: false, x: 706, y: 100},
-        { filename: 'f.png', hueRotate: false, glow: false, x: 706,y: 100, affectedByGlow: {sourceGlow: true } }
+        { filename: 'e.png', hueRotate: true, glow: false, x: 706, y: 100 },
+        { filename: 'f.png', hueRotate: false, glow: false, x: 706, y: 100, affectedByGlow: { sourceGlow: true } },
       ];
-
 
       const container = document.getElementById('imageContainer');
       const hueSlider = document.getElementById('hueSlider');
       const glowSlider = document.getElementById('glowSlider');
+      // Get the new elements for displaying gyro values
+      const betaValueElement = document.getElementById('betaValue');
+      const gammaValueElement = document.getElementById('gammaValue');
+
       let glowLevel = parseFloat(glowSlider.value);
       let hueValue = parseFloat(hueSlider.value);
       let useSensor = false;
@@ -128,7 +148,7 @@
             alpha: 0,
             speedX: Math.random() * 0.5 - 0.25,
             speedY: Math.random() * 0.5 - 0.25,
-            fadeSpeed: Math.random() * 0.02 + 0.01
+            fadeSpeed: Math.random() * 0.02 + 0.01,
           }));
         }
       });
@@ -139,7 +159,7 @@
         // glowがtrueのオブジェクト（この場合はa.png）のglowLevelを取得
         const glowSourceObject = config.find(item => item.glow);
         if (glowSourceObject) {
-          const darkenAmount = (glowLevel - 1.0) / 0.14 * MAX_DARKEN_EFFECT;
+          const darkenAmount = ((glowLevel - 1.0) / 0.14) * MAX_DARKEN_EFFECT;
           affectedBrightnessFactor = 1 - darkenAmount;
         }
 
@@ -216,27 +236,30 @@
         }
       }
 
-function handleOrientation(event) {
-  if (!useSensor) return;
+      function handleOrientation(event) {
+        if (!useSensor) return;
 
-  let gamma = event.gamma || 0;
-  let beta = event.beta || 0;
+        let gamma = event.gamma || 0;
+        let beta = event.beta || 0;
 
-  // 通常通りの hue, glow の制御
-  hueValue = Math.abs(gamma) * 4;
-  hueSlider.value = hueValue;
-  glowLevel = Math.min(1.3, Math.max(1.0, (Math.abs(beta) / 90) * 0.3 + 1.0));
-  glowSlider.value = glowLevel;
-  applyEffects();
+        // Update the displayed gyroscope values
+        betaValueElement.textContent = beta.toFixed(2);
+        gammaValueElement.textContent = gamma.toFixed(2);
 
-  // スマホの向きによる画像切り替え
-  const orientation = getOrientation(beta, gamma);
-  if (orientation !== lastOrientation) {
-    orientationImageElement.src = orientationImages[orientation];
-    lastOrientation = orientation;
-  }
-}
+        // 通常通りの hue, glow の制御
+        hueValue = Math.abs(gamma) * 4;
+        hueSlider.value = hueValue;
+        glowLevel = Math.min(1.3, Math.max(1.0, (Math.abs(beta) / 90) * 0.3 + 1.0));
+        glowSlider.value = glowLevel;
+        applyEffects();
 
+        // スマホの向きによる画像切り替え
+        const orientation = getOrientation(beta, gamma);
+        if (orientation !== lastOrientation) {
+          orientationImageElement.src = orientationImages[orientation];
+          lastOrientation = orientation;
+        }
+      }
 
       setInterval(() => {
         if (!useSensor) {
@@ -260,12 +283,12 @@ function handleOrientation(event) {
           applyEffects();
         }
       }, 50);
-             const orientationImages = {  
+      const orientationImages = {
         normal: 'normal.png',
-        faceDown: 'face_down.png',
-        faceUp: 'face_up.png',
-      leftSide: 'left.png',
-      rightSide: 'right.png'
+        top: 'face_down.png',
+        bottom: 'face_up.png',
+        leftSide: 'left.png',
+        rightSide: 'right.png',
       };
 
       const orientationImageElement = document.createElement('img');
@@ -279,36 +302,23 @@ function handleOrientation(event) {
       document.body.appendChild(orientationImageElement);
       orientationImageElement.src = orientationImages.normal; // 初期表示
       function getOrientation(beta, gamma) {
-        if (beta > 150 || beta < -150) return 'faceDown';
-        if (beta > -30 && beta < 30 && gamma > -10 && gamma < 10) return 'normal';
-        if (beta > 30 && beta < 90) return 'faceUp';
-        if (gamma > 45) return 'rightSide';
+        // 上（仰向けで顔の上に持ってる）
+        if (beta < -60) return 'top';
+
+        // うつ伏せ（下）
+        if (beta > 60) return 'bottom';
+
+        // 左側を下に
         if (gamma < -45) return 'leftSide';
+
+        // 右側を下に
+        if (gamma > 45) return 'rightSide';
+
+        // 通常の縦持ち
         return 'normal';
       }
+
       let lastOrientation = null;
-/*9
-function handleOrientation(event) {
-  if (!useSensor) return;
-
-  let gamma = event.gamma || 0;
-  let beta = event.beta || 0;
-
-  // 通常通りの hue, glow の制御
-  hueValue = Math.abs(gamma) * 4;
-  hueSlider.value = hueValue;
-  glowLevel = Math.min(1.3, Math.max(1.0, (Math.abs(beta) / 90) * 0.3 + 1.0));
-  glowSlider.value = glowLevel;
-  applyEffects();
-
-  // スマホの向きによる画像切り替え
-  const orientation = getOrientation(beta, gamma);
-  if (orientation !== lastOrientation) {
-    orientationImageElement.src = orientationImages[orientation];
-    lastOrientation = orientation;
-  }
-}
-*/
     </script>
   </body>
 </html>
